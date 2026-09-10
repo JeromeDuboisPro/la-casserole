@@ -3,6 +3,7 @@
 /android/build/
 /android/.build_version
 /export/
+/build/
 *.translation
 
 # Editor and OS noise

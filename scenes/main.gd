@@ -19,6 +19,13 @@ func _ready() -> void:
 	_pad.color = SKIN_CASSEROLE.background_color
 	_tap.tapped.connect(_on_tapped)
 	_meter.beat.connect(_bank.hit)
+	if OS.is_debug_build():
+		# What the device actually granted us, as opposed to what we asked for.
+		print("audio driver=%s output_latency=%.1f ms mix_rate=%d" % [
+			AudioServer.get_driver_name(),
+			AudioServer.get_output_latency() * 1000.0,
+			AudioServer.get_mix_rate(),
+		])
 
 func _on_tapped(timestamp_usec: int) -> void:
 	# Audio first, before anything that could grow into UI work.
