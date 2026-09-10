@@ -107,14 +107,16 @@ class NoiseService : Service() {
 		}
 	}
 
-	private fun action(name: String, icon: Int, label: String): Notification.Action {
+	private fun pendingFor(name: String): PendingIntent {
 		val intent = Intent(this, NoiseService::class.java).setAction(name)
-		val pending = PendingIntent.getService(
+		return PendingIntent.getService(
 			this, name.hashCode(), intent,
 			PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
 		)
-		return Notification.Action.Builder(Icon.createWithResource(this, icon), label, pending).build()
 	}
+
+	private fun action(name: String, icon: Int, label: String): Notification.Action =
+		Notification.Action.Builder(Icon.createWithResource(this, icon), label, pendingFor(name)).build()
 
 	private fun buildNotification(): Notification {
 		val manager = getSystemService(NotificationManager::class.java)
@@ -176,6 +178,11 @@ class NoiseService : Service() {
 			.setContentIntent(pending)
 			.addAction(toggle)
 			.addAction(stop)
+			// The system composes the media controls itself and may leave the
+			// square out of the collapsed view. A paused media notification can
+			// be swiped away, so swiping it is made to mean Stop rather than
+			// leaving the service and its wake lock behind.
+			.setDeleteIntent(pendingFor(ACTION_STOP))
 		session?.sessionToken?.let { token ->
 			builder.setStyle(
 				Notification.MediaStyle()
