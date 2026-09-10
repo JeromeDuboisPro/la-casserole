@@ -24,8 +24,10 @@ const DEFAULT_BPM := 120.0
 const MIN_BPM := 30.0
 const MAX_BPM := 300.0
 const BPM_STEP := 10.0
-## Timer values in minutes, 0 meaning no limit.
-const TIMER_STEPS: Array[int] = [0, 5, 10, 15, 20, 30, 45, 60]
+## Timer values in minutes, 0 meaning no limit. Infinity sits at the end
+## because it is the longest setting, not the shortest, and the list wraps: no
+## press ever does nothing, which is how a button reads as broken.
+const TIMER_STEPS: Array[int] = [5, 10, 15, 20, 30, 45, 60, 0]
 ## Taps further apart than this are two sessions, not a rhythm.
 const TEMPO_MAX_GAP_USEC := 3_000_000
 
@@ -52,7 +54,8 @@ const SLIDER_HEIGHT := 180.0
 
 var _noise: Node
 var _bpm := DEFAULT_BPM
-var _timer_index := 0
+## Starts on the infinity entry: a tool does not stop unless asked to.
+var _timer_index := TIMER_STEPS.size() - 1
 var _auto := false
 var _locked := false
 var _settings_open := false
@@ -191,7 +194,8 @@ func _set_bpm(value: float) -> void:
 	_refresh()
 
 func _step_timer(direction: int) -> void:
-	_timer_index = clampi(_timer_index + direction, 0, TIMER_STEPS.size() - 1)
+	var count := TIMER_STEPS.size()
+	_timer_index = (_timer_index + direction + count) % count
 	_apply_timer()
 	_refresh()
 
