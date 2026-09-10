@@ -1,10 +1,15 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://core/tap_core.gd" id="2_tap"]
 [ext_resource type="Script" path="res://core/audio_bank.gd" id="3_bank"]
 [ext_resource type="Script" path="res://core/meter.gd" id="4_meter"]
 [ext_resource type="Script" path="res://core/android_noise.gd" id="5_android"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/play.svg" id="6_play"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/minus.svg" id="7_minus"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/plus.svg" id="8_plus"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/unlock.svg" id="9_unlock"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/close.svg" id="10_close"]
 
 [node name="Main" type="Control"]
 anchors_preset = 15
@@ -25,11 +30,71 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 48.0
-offset_top = 48.0
+offset_top = 160.0
 offset_right = -48.0
-offset_bottom = -48.0
+offset_bottom = -300.0
 mouse_filter = 2
 expand_mode = 1
+stretch_mode = 5
+
+[node name="Bar" type="HBoxContainer" parent="."]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -230.0
+offset_bottom = -60.0
+alignment = 1
+theme_override_constants/separation = 40
+
+[node name="Slower" type="TextureButton" parent="Bar"]
+custom_minimum_size = Vector2(150, 150)
+focus_mode = 0
+texture_normal = ExtResource("7_minus")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Auto" type="TextureButton" parent="Bar"]
+custom_minimum_size = Vector2(190, 190)
+focus_mode = 0
+texture_normal = ExtResource("6_play")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Bpm" type="Label" parent="Bar"]
+custom_minimum_size = Vector2(150, 0)
+theme_override_colors/font_color = Color(0.62, 0.62, 0.62, 1)
+theme_override_font_sizes/font_size = 56
+text = "120"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Faster" type="TextureButton" parent="Bar"]
+custom_minimum_size = Vector2(150, 150)
+focus_mode = 0
+texture_normal = ExtResource("8_plus")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Lock" type="TextureButton" parent="."]
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 168.0
+offset_bottom = 168.0
+focus_mode = 0
+texture_normal = ExtResource("9_unlock")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Quit" type="TextureButton" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -168.0
+offset_top = 48.0
+offset_right = -48.0
+offset_bottom = 168.0
+focus_mode = 0
+texture_normal = ExtResource("10_close")
+ignore_texture_size = true
 stretch_mode = 5
 
 [node name="TapCore" type="Node" parent="."]
@@ -43,28 +108,3 @@ script = ExtResource("4_meter")
 
 [node name="AndroidNoise" type="Node" parent="."]
 script = ExtResource("5_android")
-
-[node name="Hint" type="Label" parent="."]
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -120.0
-offset_bottom = -48.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
-theme_override_font_sizes/font_size = 34
-text = "tap tap = auto"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Quit" type="Button" parent="."]
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -232.0
-offset_top = 48.0
-offset_right = -48.0
-offset_bottom = 152.0
-focus_mode = 0
-theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
-theme_override_font_sizes/font_size = 34
-text = "Quitter"

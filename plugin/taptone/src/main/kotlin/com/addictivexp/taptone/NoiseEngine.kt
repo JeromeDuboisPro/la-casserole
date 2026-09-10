@@ -134,6 +134,9 @@ object NoiseEngine {
 
 	fun isAutoRunning(): Boolean = autoRunning
 
+	/** Current tempo, so the notification can resume at the same speed. */
+	fun bpm(): Float = 60_000f / periodMs.toFloat()
+
 	private var beatCount = 0L
 
 	private val beat = object : Runnable {

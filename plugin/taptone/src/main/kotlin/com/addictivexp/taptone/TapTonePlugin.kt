@@ -45,7 +45,12 @@ class TapTonePlugin(godot: Godot) : GodotPlugin(godot) {
 	fun set_jitter(pitch: Float, volume: Float) = NoiseEngine.setJitter(pitch, volume)
 
 	@UsedByGodot
-	fun set_auto(enabled: Boolean, bpm: Float) = NoiseEngine.setAuto(enabled, bpm)
+	fun set_auto(enabled: Boolean, bpm: Float) {
+		NoiseEngine.setAuto(enabled, bpm)
+		// The notification is the only control left once the phone is pocketed,
+		// so its play/pause icon has to follow the engine.
+		activity?.applicationContext?.let { NoiseService.refresh(it) }
+	}
 
 	@UsedByGodot
 	fun is_auto_running(): Boolean = NoiseEngine.isAutoRunning()

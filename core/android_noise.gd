@@ -89,6 +89,11 @@ func set_jitter(pitch: float, volume: float) -> void:
 	if _plugin != null:
 		_plugin.set_jitter(pitch, volume)
 
+## The notification can start or pause the auto mode behind the app's back, so
+## the UI reads the state from the plugin rather than assuming it owns it.
+func is_auto_running() -> bool:
+	return _plugin.is_auto_running() if _plugin != null else false
+
 func set_auto(enabled: bool, bpm: float) -> void:
 	if _plugin != null:
 		_plugin.set_auto(enabled, bpm)
