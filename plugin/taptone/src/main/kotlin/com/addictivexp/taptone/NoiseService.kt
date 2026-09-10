@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -25,10 +27,40 @@ import android.os.PowerManager
 class NoiseService : Service() {
 
 	private var wakeLock: PowerManager.WakeLock? = null
+	private var session: MediaSession? = null
 	private var title: String = ""
 	private var text: String = ""
 
 	override fun onBind(intent: Intent?): IBinder? = null
+
+	override fun onCreate() {
+		super.onCreate()
+		// A media session is what turns this into a media notification. Android
+		// 12 and later hide the icons of ordinary notification actions and show
+		// the labels alone; only the media style keeps the shapes. It also puts
+		// the controls on the lock screen and makes a headset button work.
+		session = MediaSession(this, "TapTone").apply {
+			setCallback(object : MediaSession.Callback() {
+				override fun onPlay() = toggle()
+				override fun onPause() = toggle()
+				override fun onStop() = stopEverything()
+			})
+			isActive = true
+		}
+	}
+
+	private fun toggle() {
+		NoiseEngine.setAuto(!NoiseEngine.isAutoRunning(), NoiseEngine.bpm())
+		startInForeground(NOTIFICATION_ID, buildNotification())
+	}
+
+	private fun stopEverything() {
+		NoiseEngine.setAuto(false, NoiseEngine.bpm())
+		isRunning = false
+		releaseWakeLock()
+		stopForeground(STOP_FOREGROUND_REMOVE)
+		stopSelf()
+	}
 
 	override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 		// A refresh must never bring a stopped service back to life: it arrives
@@ -41,11 +73,7 @@ class NoiseService : Service() {
 		when (intent?.action) {
 			ACTION_TOGGLE -> NoiseEngine.setAuto(!NoiseEngine.isAutoRunning(), NoiseEngine.bpm())
 			ACTION_STOP -> {
-				NoiseEngine.setAuto(false, NoiseEngine.bpm())
-				isRunning = false
-				releaseWakeLock()
-				stopForeground(STOP_FOREGROUND_REMOVE)
-				stopSelf()
+				stopEverything()
 				return START_NOT_STICKY
 			}
 			ACTION_REFRESH -> Unit   // keep title and text, only the icons change
@@ -65,6 +93,9 @@ class NoiseService : Service() {
 	override fun onDestroy() {
 		isRunning = false
 		releaseWakeLock()
+		session?.isActive = false
+		session?.release()
+		session = null
 		super.onDestroy()
 	}
 
@@ -123,15 +154,36 @@ class NoiseService : Service() {
 		)
 		val stop = action(ACTION_STOP, R.drawable.tt_stop, "Stop")
 
-		return Notification.Builder(this, CHANNEL_ID)
+		// The session state drives the lock screen and any headset button.
+		session?.setPlaybackState(
+			PlaybackState.Builder()
+				.setActions(
+					PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_STOP
+				)
+				.setState(
+					if (running) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED,
+					PlaybackState.PLAYBACK_POSITION_UNKNOWN,
+					1.0f,
+				)
+				.build()
+		)
+
+		val builder = Notification.Builder(this, CHANNEL_ID)
 			.setContentTitle(title.ifBlank { appLabel() })
-			.setContentText(text)
+			.setContentText(if (running) "%d".format(NoiseEngine.bpm().toInt()) else text)
 			.setSmallIcon(R.drawable.tt_status)
 			.setOngoing(true)
 			.setContentIntent(pending)
 			.addAction(toggle)
 			.addAction(stop)
-			.build()
+		session?.sessionToken?.let { token ->
+			builder.setStyle(
+				Notification.MediaStyle()
+					.setMediaSession(token)
+					.setShowActionsInCompactView(0, 1)
+			)
+		}
+		return builder.build()
 	}
 
 	private fun appLabel(): String = applicationInfo.loadLabel(packageManager).toString()
