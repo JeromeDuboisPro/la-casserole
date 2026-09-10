@@ -18,6 +18,7 @@ const SKIN_CASSEROLE := preload("res://skins/casserole.tres")
 @onready var _pad: ColorRect = $Pad
 @onready var _pot: TextureRect = $Pot
 @onready var _hint: Label = $Hint
+@onready var _quit: Button = $Quit
 
 var _noise: Node
 
@@ -36,6 +37,8 @@ func _ready() -> void:
 	# with it.
 	_hint.visible = OS.is_debug_build()
 	_setup_audio()
+	_tap.blockers = [_quit]
+	_quit.pressed.connect(_on_quit_pressed)
 	_tap.tapped.connect(_on_tapped)
 	_meter.beat.connect(_on_beat)
 	if OS.is_debug_build():
@@ -63,6 +66,26 @@ func _setup_audio() -> void:
 			AudioServer.get_output_latency() * 1000.0,
 			AudioServer.get_mix_rate(),
 		])
+
+## Leaving has to silence the phone, not just close the window: the plugin
+## keeps a foreground service and a wake lock alive on purpose, and they
+## outlive the app unless something stops them.
+func _on_quit_pressed() -> void:
+	_silence()
+	get_tree().quit()
+
+func _notification(what: int) -> void:
+	# The Android back gesture takes the same road as the button.
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_silence()
+		get_tree().quit()
+
+func _silence() -> void:
+	if _android.is_available():
+		_android.set_auto(false, TEST_BPM)
+		_android.stop_background()
+	elif _meter.is_running():
+		_meter.stop()
 
 func _on_tapped(timestamp_usec: int) -> void:
 	# Audio first, before anything that could grow into UI work.

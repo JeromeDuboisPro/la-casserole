@@ -56,3 +56,15 @@ theme_override_font_sizes/font_size = 34
 text = "tap tap = auto"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Quit" type="Button" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -232.0
+offset_top = 48.0
+offset_right = -48.0
+offset_bottom = 152.0
+focus_mode = 0
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
+theme_override_font_sizes/font_size = 34
+text = "Quitter"
