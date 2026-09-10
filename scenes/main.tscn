@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://core/tap_core.gd" id="2_tap"]
 [ext_resource type="Script" path="res://core/audio_bank.gd" id="3_bank"]
 [ext_resource type="Script" path="res://core/meter.gd" id="4_meter"]
+[ext_resource type="Script" path="res://core/android_noise.gd" id="5_android"]
 
 [node name="Main" type="Control"]
 anchors_preset = 15
@@ -27,3 +28,6 @@ script = ExtResource("3_bank")
 
 [node name="Meter" type="Node" parent="."]
 script = ExtResource("4_meter")
+
+[node name="AndroidNoise" type="Node" parent="."]
+script = ExtResource("5_android")

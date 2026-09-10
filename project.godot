@@ -10,6 +10,10 @@ config/description="Un outil de manifestation. On tape l'ecran, ca sonne comme u
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/taptone/plugin.cfg")
+
 [audio]
 
 ; Ask the output device for the smallest buffer it will grant us.

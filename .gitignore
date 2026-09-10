@@ -16,3 +16,7 @@
 # Local tooling state
 .serena/
 .remember/
+
+# Gradle build state of the plugin project
+plugin/.gradle/
+plugin/*/build/
