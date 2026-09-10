@@ -9,6 +9,7 @@ extends Node
 ## app does not care which one it is talking to.
 
 const PLUGIN_NAME := "TapTone"
+const SAMPLE_DIR := "user://samples"
 
 var _plugin: Object = null
 var _ids: PackedInt32Array = []
@@ -25,17 +26,24 @@ func _ready() -> void:
 	_plugin.open()
 
 ## SoundPool reads files from disk, and the samples live inside the packed
-## project, so they are written out once to user:// and handed over by path.
+## project, so they are written out to user:// and handed over by path.
+##
+## The file name carries a hash of the sample data. An earlier version wrote
+## "sample_00.wav" once and skipped the write whenever the file already
+## existed, so every later build kept playing whatever the first install had
+## extracted, however many times the samples were replaced in the project.
 func load_samples(streams: Array[AudioStream]) -> void:
 	if _plugin == null:
 		return
-	DirAccess.make_dir_recursive_absolute("user://samples")
+	DirAccess.make_dir_recursive_absolute(SAMPLE_DIR)
+	var written: Array[String] = []
 	for i in streams.size():
 		var wav := streams[i] as AudioStreamWAV
 		if wav == null:
 			push_warning("TapTone only takes wav samples, skipping index %d" % i)
 			continue
-		var path := "user://samples/sample_%02d.wav" % i
+		var path := "%s/sample_%02d_%s.wav" % [SAMPLE_DIR, i, _digest(wav)]
+		written.append(path.get_file())
 		if not FileAccess.file_exists(path):
 			var err := wav.save_to_wav(path)
 			if err != OK:
@@ -44,6 +52,25 @@ func load_samples(streams: Array[AudioStream]) -> void:
 		var id: int = _plugin.load_sample(ProjectSettings.globalize_path(path))
 		if id != 0:
 			_ids.append(id)
+		if OS.is_debug_build():
+			print("sample %d -> %s (id %d)" % [i, path.get_file(), id])
+	_purge_except(written)
+
+## Short content hash, so replacing a sample changes the file name.
+static func _digest(wav: AudioStreamWAV) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(wav.data)
+	return ctx.finish().hex_encode().substr(0, 12)
+
+## Samples from previous builds would otherwise pile up in the app data.
+func _purge_except(keep: Array[String]) -> void:
+	var dir := DirAccess.open(SAMPLE_DIR)
+	if dir == null:
+		return
+	for file in dir.get_files():
+		if not keep.has(file):
+			dir.remove(file)
 
 ## How many samples SoundPool finished decoding. It loads asynchronously.
 func ready_count() -> int:
