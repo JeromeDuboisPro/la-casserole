@@ -8,6 +8,7 @@ config_version=5
 config/name="Casserole"
 config/description="Un outil de manifestation. On tape l'ecran, ca sonne comme une casserole."
 run/main_scene="res://scenes/main.tscn"
+config/icon="res://icon.svg"
 config/features=PackedStringArray("4.7", "Mobile")
 
 [editor_plugins]

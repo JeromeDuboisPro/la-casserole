@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <g transform="translate(256 256) scale(0.62) translate(-250 -272)">
+  <g transform="translate(-6 -22)">
+    <!-- sound, on the left, because the pot is being struck -->
+    <g fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round">
+      <path d="M 92 214 A 74 74 0 0 0 92 298"/>
+      <path d="M 52 190 A 116 116 0 0 0 52 322"/>
+    </g>
+    <!-- handle -->
+    <rect x="352" y="222" width="118" height="34" rx="17" fill="#FFFFFF"/>
+    <!-- rim -->
+    <rect x="128" y="196" width="248" height="36" rx="18" fill="#FFFFFF"/>
+    <!-- body -->
+    <path d="M 142 240 L 362 240 L 348 380 Q 344 404 320 404 L 184 404 Q 160 404 156 380 Z" fill="#FFFFFF"/>
+  </g>
+</g>
+</svg>
