@@ -113,19 +113,20 @@ class NoiseService : Service() {
 		}
 
 		val running = NoiseEngine.isAutoRunning()
-		// System icons and one-word labels: this notification is read in a
-		// street, by people who may not read the app's language.
+		// The transport triad, drawn as the shapes everyone already knows: two
+		// bars, a triangle, a square. A cross would read as "close the app"
+		// rather than "stop the noise".
 		val toggle = action(
 			ACTION_TOGGLE,
-			if (running) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
+			if (running) R.drawable.tt_pause else R.drawable.tt_play,
 			if (running) "Pause" else "Play",
 		)
-		val stop = action(ACTION_STOP, android.R.drawable.ic_menu_close_clear_cancel, "Stop")
+		val stop = action(ACTION_STOP, R.drawable.tt_stop, "Stop")
 
 		return Notification.Builder(this, CHANNEL_ID)
 			.setContentTitle(title.ifBlank { appLabel() })
 			.setContentText(text)
-			.setSmallIcon(applicationInfo.icon)
+			.setSmallIcon(R.drawable.tt_status)
 			.setOngoing(true)
 			.setContentIntent(pending)
 			.addAction(toggle)
