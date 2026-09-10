@@ -1,0 +1,36 @@
+; Casserole - protest noise tool.
+; Engine configuration file. Edited by the Godot editor; hand edits are fine.
+
+config_version=5
+
+[application]
+
+config/name="Casserole"
+config/description="Un outil de manifestation. On tape l'ecran, ca sonne comme une casserole."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "Mobile")
+
+[audio]
+
+; Ask the output device for the smallest buffer it will grant us.
+; This is the single most important setting for tap-to-sound latency.
+driver/output_latency=10
+; Browsers cannot honour 10 ms; asking for it just causes crackle.
+driver/output_latency.web=50
+
+[display]
+
+window/handheld/orientation=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input_devices]
+
+; Touch already reaches us as InputEventScreenTouch. Leaving mouse emulation on
+; would deliver a second event for the same finger, and play the sound twice.
+pointing/emulate_mouse_from_touch=false
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
