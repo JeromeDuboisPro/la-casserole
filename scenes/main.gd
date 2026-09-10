@@ -16,16 +16,17 @@ const SKIN_CASSEROLE := preload("res://skins/casserole.tres")
 
 const ICON_PLAY := preload("res://assets/icons/ui/play.svg")
 const ICON_PAUSE := preload("res://assets/icons/ui/pause.svg")
-const ICON_LOCK := preload("res://assets/icons/ui/lock.svg")
-const ICON_UNLOCK := preload("res://assets/icons/ui/unlock.svg")
 
 const DEFAULT_BPM := 120.0
 const MIN_BPM := 30.0
 const MAX_BPM := 300.0
 const BPM_STEP := 10.0
+const MIN_MARGIN := 48.0
+const TOP_BUTTON_SIZE := 120.0
+const BAR_HEIGHT := 190.0
+const SLIDER_HEIGHT := 180.0
 ## Taps further apart than this are two sessions, not a rhythm.
 const TEMPO_MAX_GAP_USEC := 3_000_000
-const UNLOCK_HOLD_SEC := 0.8
 
 @onready var _tap: TapCore = $TapCore
 @onready var _bank: AudioBank = $AudioBank
@@ -38,6 +39,7 @@ const UNLOCK_HOLD_SEC := 0.8
 @onready var _bpm_label: Label = $Bar/Bpm
 @onready var _lock_button: TextureButton = $Lock
 @onready var _quit_button: TextureButton = $Quit
+@onready var _unlock: UnlockSlider = $Unlock
 
 var _noise: Node
 var _bpm := DEFAULT_BPM
@@ -45,26 +47,48 @@ var _auto := false
 var _locked := false
 ## Timestamps of the last taps, used to read the tempo off the hand.
 var _tap_times: Array[int] = []
-var _lock_held_since_usec := 0
-## BaseButton.button_pressed only tracks toggle buttons, so the hold is tracked here.
-var _lock_held := false
-## Set when a hold has already unlocked, so releasing it does not lock again.
-var _lock_consumed := false
 
 func _ready() -> void:
 	_pad.color = SKIN_CASSEROLE.background_color
 	_pot.texture = SKIN_CASSEROLE.sprite
 	_setup_audio()
-	_tap.blockers = [_bar, _lock_button, _quit_button]
+	_tap.blockers = [_bar, _lock_button, _quit_button, _unlock]
 	_tap.tapped.connect(_on_tapped)
 	_meter.beat.connect(_on_beat)
 	_auto_button.pressed.connect(_toggle_auto)
 	$Bar/Slower.pressed.connect(func(): _set_bpm(_bpm - BPM_STEP))
 	$Bar/Faster.pressed.connect(func(): _set_bpm(_bpm + BPM_STEP))
-	_lock_button.button_down.connect(_on_lock_down)
-	_lock_button.button_up.connect(_on_lock_up)
+	_lock_button.pressed.connect(_lock)
+	_unlock.unlocked.connect(_on_unlocked)
 	_quit_button.pressed.connect(_on_quit_pressed)
+	_apply_safe_area()
+	get_viewport().size_changed.connect(_apply_safe_area)
 	_refresh()
+
+## Keeps the controls clear of the camera cutout at the top and of the gesture
+## bar at the bottom. Without this the lock sits under the front camera on any
+## phone with a notch.
+func _apply_safe_area() -> void:
+	var window := DisplayServer.window_get_size()
+	if window.y <= 0:
+		return
+	var safe := DisplayServer.get_display_safe_area()
+	# The scene is laid out in canvas units, the insets come back in screen
+	# pixels, and the stretch between them is whatever the device imposes.
+	var scale := get_viewport_rect().size.y / float(window.y)
+	var top: float = maxf(safe.position.y * scale, MIN_MARGIN)
+	var bottom: float = maxf((window.y - safe.position.y - safe.size.y) * scale, MIN_MARGIN)
+
+	for button in [_lock_button, _quit_button]:
+		button.offset_top = top
+		button.offset_bottom = top + TOP_BUTTON_SIZE
+
+	_bar.offset_top = -(bottom + BAR_HEIGHT)
+	_bar.offset_bottom = -bottom
+	_unlock.offset_top = -(bottom + SLIDER_HEIGHT)
+	_unlock.offset_bottom = -bottom
+	_pot.offset_top = top + TOP_BUTTON_SIZE + MIN_MARGIN
+	_pot.offset_bottom = -(bottom + SLIDER_HEIGHT + MIN_MARGIN)
 
 func _setup_audio() -> void:
 	if _android.is_available():
@@ -84,7 +108,6 @@ func _setup_audio() -> void:
 	_noise = _bank
 
 func _process(_delta: float) -> void:
-	_update_unlock_feedback()
 	# The notification can pause or stop the auto mode while the app is away,
 	# so the button follows the engine rather than the other way round.
 	if _android.is_available():
@@ -152,50 +175,16 @@ func _apply_auto(enabled: bool) -> void:
 func _on_beat() -> void:
 	_noise.hit()
 
-## Locking hides the controls so a pocket cannot press them. Unlocking asks for
-## a deliberate hold, for the same reason: one accidental press must not undo it.
-##
-## The hold has to announce itself. A lock with no way out that a user can see
-## is worse than no lock at all, so the padlock fills up while it is held, and
-## the back gesture is kept as a way out.
-func _on_lock_down() -> void:
-	_lock_held_since_usec = Time.get_ticks_usec()
-	_lock_held = true
-	_lock_consumed = false
-
-func _on_lock_up() -> void:
-	# A hold that already unlocked must not be read as a fresh press, or the
-	# release locks the app straight back and the hold looks broken.
-	if not _lock_consumed:
-		if not _locked:
-			_locked = true
-		elif _unlock_progress() >= 1.0:
-			_locked = false
-	_lock_held = false
-	_lock_consumed = false
-	_lock_held_since_usec = 0
+## Locking stops a pocket from pressing anything. Unlocking is a slide rather
+## than a press, for the same reason, and because a knob with arrows on it says
+## what to do without a word of any language.
+func _lock() -> void:
+	_locked = true
 	_refresh()
 
-func _unlock_progress() -> float:
-	if not _lock_held or _lock_held_since_usec == 0:
-		return 0.0
-	var held := (Time.get_ticks_usec() - _lock_held_since_usec) / 1_000_000.0
-	return clampf(held / UNLOCK_HOLD_SEC, 0.0, 1.0)
-
-func _update_unlock_feedback() -> void:
-	if not _locked:
-		return
-	var progress := _unlock_progress()
-	# Grows and reddens as the hold approaches release, so the way out is
-	# visible from the first tenth of a second.
-	_lock_button.scale = Vector2.ONE * (1.0 + 0.25 * progress)
-	_lock_button.pivot_offset = _lock_button.size * 0.5
-	_lock_button.modulate = Color(1, 1, 1).lerp(Color(0.90, 0.28, 0.30), progress)
-	if progress >= 1.0 and _lock_held:
-		_locked = false
-		_lock_consumed = true
-		_lock_held_since_usec = 0
-		_refresh()
+func _on_unlocked() -> void:
+	_locked = false
+	_refresh()
 
 func _refresh() -> void:
 	_auto_button.texture_normal = ICON_PAUSE if _auto else ICON_PLAY
@@ -203,9 +192,8 @@ func _refresh() -> void:
 	_bpm_label.text = "%d" % roundi(_bpm)
 	_bar.visible = not _locked
 	_quit_button.visible = not _locked
-	_lock_button.texture_normal = ICON_LOCK if _locked else ICON_UNLOCK
-	_lock_button.scale = Vector2.ONE
-	_lock_button.modulate = Color(1, 1, 1)
+	_lock_button.visible = not _locked
+	_unlock.visible = _locked
 	_pot.modulate = Color(1, 1, 1, 0.35) if _locked else Color(1, 1, 1, 1)
 
 ## Leaving has to silence the phone, not just close the window: the plugin
@@ -220,7 +208,6 @@ func _notification(what: int) -> void:
 		# While locked, back is the emergency exit from the lock, not from the app.
 		if _locked:
 			_locked = false
-			_lock_held_since_usec = 0
 			_refresh()
 			return
 		# Otherwise it takes the same road as the quit button.

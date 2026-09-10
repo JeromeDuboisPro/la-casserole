@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://core/tap_core.gd" id="2_tap"]
@@ -10,6 +10,16 @@
 [ext_resource type="Texture2D" path="res://assets/icons/ui/plus.svg" id="8_plus"]
 [ext_resource type="Texture2D" path="res://assets/icons/ui/unlock.svg" id="9_unlock"]
 [ext_resource type="Texture2D" path="res://assets/icons/ui/close.svg" id="10_close"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/chevron.svg" id="11_chevron"]
+[ext_resource type="Texture2D" path="res://assets/icons/ui/lock.svg" id="12_lock"]
+[ext_resource type="Script" path="res://core/unlock_slider.gd" id="13_slider"]
+
+[sub_resource type="StyleBoxFlat" id="track"]
+bg_color = Color(0.2, 0.2, 0.2, 1)
+corner_radius_top_left = 90
+corner_radius_top_right = 90
+corner_radius_bottom_right = 90
+corner_radius_bottom_left = 90
 
 [node name="Main" type="Control"]
 anchors_preset = 15
@@ -108,3 +118,50 @@ script = ExtResource("4_meter")
 
 [node name="AndroidNoise" type="Node" parent="."]
 script = ExtResource("5_android")
+
+[node name="Unlock" type="Panel" parent="."]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -260.0
+offset_right = -60.0
+offset_bottom = -80.0
+theme_override_styles/panel = SubResource("track")
+script = ExtResource("13_slider")
+
+[node name="Chevrons" type="HBoxContainer" parent="Unlock"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 220.0
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="C1" type="TextureRect" parent="Unlock/Chevrons"]
+custom_minimum_size = Vector2(70, 70)
+texture = ExtResource("11_chevron")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="C2" type="TextureRect" parent="Unlock/Chevrons"]
+custom_minimum_size = Vector2(70, 70)
+texture = ExtResource("11_chevron")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="C3" type="TextureRect" parent="Unlock/Chevrons"]
+custom_minimum_size = Vector2(70, 70)
+texture = ExtResource("11_chevron")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Knob" type="TextureRect" parent="Unlock"]
+custom_minimum_size = Vector2(180, 180)
+offset_right = 180.0
+offset_bottom = 180.0
+mouse_filter = 2
+texture = ExtResource("12_lock")
+expand_mode = 1
+stretch_mode = 5
