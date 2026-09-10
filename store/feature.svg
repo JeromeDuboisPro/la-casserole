@@ -10,5 +10,5 @@
     <rect x="128" y="188" width="248" height="44" rx="22" fill="#EDEAE4"/>
     <path d="M 142 240 L 362 240 L 348 380 Q 344 404 320 404 L 184 404 Q 160 404 156 380 Z" fill="#EDEAE4"/>
   </g>
-  <text x="470" y="272" font-family="DejaVu Sans, sans-serif" font-size="86" font-weight="bold" fill="#EDEAE4" letter-spacing="4">CASSEROLE</text>
+  <text x="700" y="272" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="68" font-weight="bold" fill="#EDEAE4" letter-spacing="3">LA CASSEROLE</text>
 </svg>

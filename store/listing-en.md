@@ -1,7 +1,7 @@
 # Play listing — English (en-US)
 
 ## App name (30 characters max)
-Casserole
+La Casserole
 
 ## Short description (80 characters max)
 They can stop you bringing a pot. They can't stop your phone.

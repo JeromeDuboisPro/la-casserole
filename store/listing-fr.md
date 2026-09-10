@@ -1,7 +1,7 @@
 # Fiche Play — français (fr-FR)
 
 ## Nom de l'application (30 caractères max)
-Casserole
+La Casserole
 
 ## Description courte (80 caractères max)
 On peut t'empêcher d'emmener une casserole. Pas ton téléphone.

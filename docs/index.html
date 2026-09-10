@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Casserole — Confidentialité / Privacy</title>
+<title>La Casserole — Confidentialité / Privacy</title>
 <style>
   :root { color-scheme: dark; }
   body {
@@ -17,16 +17,37 @@
   code { background: #232323; padding: .1em .35em; border-radius: 4px; font-size: .9em; }
   hr { border: none; border-top: 1px solid #2c2c2c; margin: 3.5em 0; }
   .date { color: #8a8a8a; font-size: .9rem; }
+  /* Sticky so the other language stays one tap away however far you scroll. */
+  .langs {
+    position: sticky; top: 0; z-index: 1;
+    display: flex; gap: .5rem; justify-content: flex-end;
+    margin: -48px -20px 24px; padding: 12px 20px;
+    background: #141414; border-bottom: 1px solid #2c2c2c;
+  }
+  .langs a {
+    color: #cdc9c2; text-decoration: none;
+    padding: .3em .8em; border: 1px solid #3a3a3a; border-radius: 999px;
+    font-size: .85rem; letter-spacing: .04em;
+  }
+  .langs a:hover, .langs a:focus { color: #EDEAE4; border-color: #E5484D; }
+  /* Keeps a heading clear of the sticky bar when jumped to. */
+  section { scroll-margin-top: 64px; }
 </style>
 </head>
 <body>
 
-<h1>Casserole</h1>
+<nav class="langs">
+  <a href="#fr" hreflang="fr">FR</a>
+  <a href="#en" hreflang="en">EN</a>
+</nav>
+
+<section id="fr" lang="fr">
+<h1>La Casserole</h1>
 <p class="date">Politique de confidentialité — dernière mise à jour : 10 septembre 2026</p>
 
 <h2>Ce que l'application collecte</h2>
 <p><strong>Rien.</strong> Aucune donnée personnelle n'est collectée, stockée, transmise ni partagée.</p>
-<p>Casserole n'a pas de compte, pas de formulaire, pas de mesure d'audience, pas de publicité, pas de traceur.
+<p>La Casserole n'a pas de compte, pas de formulaire, pas de mesure d'audience, pas de publicité, pas de traceur.
 L'application ne demande aucune permission réseau : elle est techniquement incapable d'envoyer quoi que ce soit,
 à qui que ce soit.</p>
 
@@ -54,14 +75,17 @@ pas plus que pour les autres utilisateurs.</p>
 <h2>Contact</h2>
 <p>CONTACT_EMAIL</p>
 
+</section>
+
 <hr>
 
-<h1>Casserole</h1>
+<section id="en" lang="en">
+<h1>La Casserole</h1>
 <p class="date">Privacy policy — last updated: 10 September 2026</p>
 
 <h2>What the app collects</h2>
 <p><strong>Nothing.</strong> No personal data is collected, stored, transmitted or shared.</p>
-<p>Casserole has no account, no form, no analytics, no advertising and no tracker. The app requests no
+<p>La Casserole has no account, no form, no analytics, no advertising and no tracker. The app requests no
 network permission whatsoever: it is technically unable to send anything, to anyone.</p>
 
 <h2>Permissions requested</h2>
@@ -84,6 +108,7 @@ with the app. Nothing leaves the phone.</p>
 
 <h2>Contact</h2>
 <p>CONTACT_EMAIL</p>
+</section>
 
 </body>
 </html>
