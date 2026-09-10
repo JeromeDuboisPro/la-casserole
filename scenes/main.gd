@@ -17,6 +17,7 @@ const SKIN_CASSEROLE := preload("res://skins/casserole.tres")
 @onready var _meter: Meter = $Meter
 @onready var _pad: ColorRect = $Pad
 @onready var _pot: TextureRect = $Pot
+@onready var _hint: Label = $Hint
 
 var _noise: Node
 
@@ -31,6 +32,9 @@ var _android_auto: bool = false
 func _ready() -> void:
 	_pad.color = SKIN_CASSEROLE.background_color
 	_pot.texture = SKIN_CASSEROLE.sprite
+	# The hint documents the temporary double-tap toggle, so it lives and dies
+	# with it.
+	_hint.visible = OS.is_debug_build()
 	_setup_audio()
 	_tap.tapped.connect(_on_tapped)
 	_meter.beat.connect(_on_beat)

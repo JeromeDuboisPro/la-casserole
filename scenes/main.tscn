@@ -43,3 +43,16 @@ script = ExtResource("4_meter")
 
 [node name="AndroidNoise" type="Node" parent="."]
 script = ExtResource("5_android")
+
+[node name="Hint" type="Label" parent="."]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -120.0
+offset_bottom = -48.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+theme_override_font_sizes/font_size = 34
+text = "tap tap = auto"
+horizontal_alignment = 1
+vertical_alignment = 1
