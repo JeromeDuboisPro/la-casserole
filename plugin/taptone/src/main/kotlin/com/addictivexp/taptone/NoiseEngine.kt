@@ -32,10 +32,14 @@ object NoiseEngine {
 	private val loaded = mutableListOf<Int>()
 	private val ready = mutableSetOf<Int>()
 
+	private var appContext: Context? = null
 	private var thread: HandlerThread? = null
 	private var handler: Handler? = null
 
 	private var autoRunning = false
+	/** Seconds the auto mode may run before stopping itself. 0 means no limit. */
+	private var timerSeconds = 0f
+	private var deadlineUptime = 0L
 	private var periodMs = 500L
 	private var nextBeatAt = 0L
 	private var nextIndex = 0
@@ -69,7 +73,7 @@ object NoiseEngine {
 		thread.start()
 		this.thread = thread
 		handler = Handler(thread.looper)
-		context.applicationContext.getSystemService(Context.AUDIO_SERVICE) // touch, so the service is up
+		appContext = context.applicationContext
 	}
 
 	/** Loads a sample from an absolute file path. Returns its id, or 0 on failure. */
@@ -126,13 +130,50 @@ object NoiseEngine {
 			autoRunning = true
 			nextBeatAt = SystemClock.uptimeMillis()
 			h.post(beat)
+			rearmTimer()
 		} else if (!enabled && autoRunning) {
 			autoRunning = false
 			h.removeCallbacks(beat)
+			rearmTimer()
 		}
 	}
 
 	fun isAutoRunning(): Boolean = autoRunning
+
+	/**
+	 * Stops the auto mode by itself after a while. Kept here rather than in the
+	 * app because the engine outlives the app's scene tree: a countdown living
+	 * in Godot would freeze the moment the phone goes into a pocket.
+	 */
+	fun setTimer(seconds: Float) {
+		timerSeconds = maxOf(0f, seconds)
+		rearmTimer()
+	}
+
+	fun timerSeconds(): Float = timerSeconds
+
+	/** Seconds left before the timer fires, or 0 when nothing is armed. */
+	fun remainingSeconds(): Float {
+		if (!autoRunning || timerSeconds <= 0f) return 0f
+		return maxOf(0f, (deadlineUptime - SystemClock.uptimeMillis()) / 1000f)
+	}
+
+	private val stopOnTimer = Runnable {
+		setAuto(false, bpm())
+		// The notification still shows Pause otherwise, for a tool that stopped.
+		appContext?.let { NoiseService.refresh(it) }
+	}
+
+	private fun rearmTimer() {
+		val h = handler ?: return
+		h.removeCallbacks(stopOnTimer)
+		if (autoRunning && timerSeconds > 0f) {
+			deadlineUptime = SystemClock.uptimeMillis() + (timerSeconds * 1000f).toLong()
+			h.postAtTime(stopOnTimer, deadlineUptime)
+		} else {
+			deadlineUptime = 0L
+		}
+	}
 
 	/** Current tempo, so the notification can resume at the same speed. */
 	fun bpm(): Float = 60_000f / periodMs.toFloat()
@@ -158,6 +199,8 @@ object NoiseEngine {
 	@Synchronized
 	fun close() {
 		setAuto(false, 60f)
+		handler?.removeCallbacks(stopOnTimer)
+		appContext = null
 		pool?.release()
 		pool = null
 		loaded.clear()

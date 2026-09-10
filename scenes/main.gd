@@ -1,9 +1,12 @@
 extends Control
 
-## The whole screen is the pot: a press anywhere that is not a control makes a
-## noise. The controls sit in a row at the bottom, drawn as symbols rather than
-## words, because this is meant to be picked up in a street by someone who does
-## not read French.
+## The screen is the pot: a press anywhere that is not a control makes a noise.
+##
+## One action is visible by default, play. The settings sit behind a button and
+## fold away as soon as playback starts, because they are set once before the
+## phone goes into a pocket and only clutter the screen afterwards. Everything
+## is drawn as symbols: the app is meant to be picked up in a street by someone
+## who does not read French.
 ##
 ## Two playback backends, picked at startup:
 ## - on Android, the TapTone plugin (SoundPool inside a foreground service),
@@ -21,12 +24,15 @@ const DEFAULT_BPM := 120.0
 const MIN_BPM := 30.0
 const MAX_BPM := 300.0
 const BPM_STEP := 10.0
-const MIN_MARGIN := 48.0
-const TOP_BUTTON_SIZE := 120.0
-const BAR_HEIGHT := 190.0
-const SLIDER_HEIGHT := 180.0
+## Timer values in minutes, 0 meaning no limit.
+const TIMER_STEPS: Array[int] = [0, 5, 10, 15, 20, 30, 45, 60]
 ## Taps further apart than this are two sessions, not a rhythm.
 const TEMPO_MAX_GAP_USEC := 3_000_000
+
+const MIN_MARGIN := 48.0
+const TOP_BUTTON_SIZE := 120.0
+const AUTO_SIZE := 250.0
+const SLIDER_HEIGHT := 180.0
 
 @onready var _tap: TapCore = $TapCore
 @onready var _bank: AudioBank = $AudioBank
@@ -34,33 +40,43 @@ const TEMPO_MAX_GAP_USEC := 3_000_000
 @onready var _meter: Meter = $Meter
 @onready var _pad: ColorRect = $Pad
 @onready var _pot: TextureRect = $Pot
-@onready var _bar: HBoxContainer = $Bar
-@onready var _auto_button: TextureButton = $Bar/Auto
-@onready var _bpm_label: Label = $Bar/Bpm
+@onready var _auto_button: TextureButton = $Auto
+@onready var _toggle_button: TextureButton = $Toggle
+@onready var _settings: VBoxContainer = $Settings
+@onready var _countdown: Label = $Countdown
+@onready var _tempo_value: Label = $Settings/TempoRow/Value
+@onready var _timer_value: Label = $Settings/TimerRow/Value
 @onready var _lock_button: TextureButton = $Lock
 @onready var _quit_button: TextureButton = $Quit
 @onready var _unlock: UnlockSlider = $Unlock
 
 var _noise: Node
 var _bpm := DEFAULT_BPM
+var _timer_index := 0
 var _auto := false
 var _locked := false
+var _settings_open := false
 ## Timestamps of the last taps, used to read the tempo off the hand.
 var _tap_times: Array[int] = []
+## Desktop and web have no plugin, so the countdown is kept here for them.
+var _deadline_usec := 0
 
 func _ready() -> void:
 	_pad.color = SKIN_CASSEROLE.background_color
 	_pot.texture = SKIN_CASSEROLE.sprite
 	_setup_audio()
-	_tap.blockers = [_bar, _lock_button, _quit_button, _unlock]
+	_tap.blockers = [_settings, _auto_button, _toggle_button, _lock_button, _quit_button, _unlock]
 	_tap.tapped.connect(_on_tapped)
 	_meter.beat.connect(_on_beat)
 	_auto_button.pressed.connect(_toggle_auto)
-	$Bar/Slower.pressed.connect(func(): _set_bpm(_bpm - BPM_STEP))
-	$Bar/Faster.pressed.connect(func(): _set_bpm(_bpm + BPM_STEP))
+	_toggle_button.pressed.connect(_toggle_settings)
+	$Settings/TempoRow/Less.pressed.connect(func(): _set_bpm(_bpm - BPM_STEP))
+	$Settings/TempoRow/More.pressed.connect(func(): _set_bpm(_bpm + BPM_STEP))
+	$Settings/TimerRow/Less.pressed.connect(func(): _step_timer(-1))
+	$Settings/TimerRow/More.pressed.connect(func(): _step_timer(1))
 	_lock_button.pressed.connect(_lock)
-	_unlock.unlocked.connect(_on_unlocked)
 	_quit_button.pressed.connect(_on_quit_pressed)
+	_unlock.unlocked.connect(_on_unlocked)
 	_apply_safe_area()
 	get_viewport().size_changed.connect(_apply_safe_area)
 	_refresh()
@@ -83,12 +99,18 @@ func _apply_safe_area() -> void:
 		button.offset_top = top
 		button.offset_bottom = top + TOP_BUTTON_SIZE
 
-	_bar.offset_top = -(bottom + BAR_HEIGHT)
-	_bar.offset_bottom = -bottom
+	_auto_button.offset_top = -(bottom + AUTO_SIZE)
+	_auto_button.offset_bottom = -bottom
+	_toggle_button.offset_top = -(bottom + AUTO_SIZE * 0.75)
+	_toggle_button.offset_bottom = -(bottom + AUTO_SIZE * 0.75 - TOP_BUTTON_SIZE)
+	_countdown.offset_top = -(bottom + AUTO_SIZE + 70.0)
+	_countdown.offset_bottom = -(bottom + AUTO_SIZE + 10.0)
+	_settings.offset_top = -(bottom + AUTO_SIZE + 330.0)
+	_settings.offset_bottom = -(bottom + AUTO_SIZE + 90.0)
 	_unlock.offset_top = -(bottom + SLIDER_HEIGHT)
 	_unlock.offset_bottom = -bottom
 	_pot.offset_top = top + TOP_BUTTON_SIZE + MIN_MARGIN
-	_pot.offset_bottom = -(bottom + SLIDER_HEIGHT + MIN_MARGIN)
+	_pot.offset_bottom = -(bottom + AUTO_SIZE + 380.0)
 
 func _setup_audio() -> void:
 	if _android.is_available():
@@ -107,13 +129,29 @@ func _setup_audio() -> void:
 	_noise = _bank
 
 func _process(_delta: float) -> void:
-	# The notification can pause or stop the auto mode while the app is away,
-	# so the button follows the engine rather than the other way round.
+	# The notification and the timer can both stop the auto mode while the app
+	# is away, so the button follows the engine rather than the other way round.
 	if _android.is_available():
 		var running: bool = _android.is_auto_running()
 		if running != _auto:
 			_auto = running
 			_refresh()
+		_countdown.text = _format_remaining(_android.remaining_seconds())
+	else:
+		var left := 0.0
+		if _auto and _deadline_usec > 0:
+			left = maxf(0.0, (_deadline_usec - Time.get_ticks_usec()) / 1_000_000.0)
+			if left <= 0.0:
+				_auto = false
+				_apply_auto(false)
+				_refresh()
+		_countdown.text = _format_remaining(left)
+
+func _format_remaining(seconds: float) -> String:
+	if seconds <= 0.0:
+		return ""
+	var total := int(ceilf(seconds))
+	return "%d:%02d" % [total / 60, total % 60]
 
 func _on_tapped(timestamp_usec: int) -> void:
 	if _locked:
@@ -152,11 +190,31 @@ func _set_bpm(value: float) -> void:
 		_apply_auto(true)
 	_refresh()
 
+func _step_timer(direction: int) -> void:
+	_timer_index = clampi(_timer_index + direction, 0, TIMER_STEPS.size() - 1)
+	_apply_timer()
+	_refresh()
+
+func _apply_timer() -> void:
+	var seconds := TIMER_STEPS[_timer_index] * 60.0
+	if _android.is_available():
+		_android.set_timer(seconds)
+		return
+	_deadline_usec = 0
+	if _auto and seconds > 0.0:
+		_deadline_usec = Time.get_ticks_usec() + int(seconds * 1_000_000.0)
+
+func _toggle_settings() -> void:
+	_settings_open = not _settings_open
+	_refresh()
+
 func _toggle_auto() -> void:
 	_auto = not _auto
-	if OS.is_debug_build():
-		print("auto -> %s at %d bpm" % [_auto, roundi(_bpm)])
 	_apply_auto(_auto)
+	# Starting playback is the moment the phone gets put away, so the screen
+	# goes back to being just a pot.
+	if _auto:
+		_settings_open = false
 	_refresh()
 
 func _apply_auto(enabled: bool) -> void:
@@ -168,12 +226,14 @@ func _apply_auto(enabled: bool) -> void:
 		if enabled:
 			_android.start_background(SKIN_CASSEROLE.display_name, "")
 		_android.set_auto(enabled, _bpm)
+		_apply_timer()
 		return
 	if enabled:
 		_meter.bpm = _bpm
 		_meter.start()
 	else:
 		_meter.stop()
+	_apply_timer()
 
 ## The engine-side Meter only drives the desktop and web builds. On Android the
 ## tempo is kept by the plugin, which still ticks while the app is suspended.
@@ -185,6 +245,7 @@ func _on_beat() -> void:
 ## what to do without a word of any language.
 func _lock() -> void:
 	_locked = true
+	_settings_open = false
 	_refresh()
 
 func _on_unlocked() -> void:
@@ -194,8 +255,14 @@ func _on_unlocked() -> void:
 func _refresh() -> void:
 	_auto_button.texture_normal = ICON_PAUSE if _auto else ICON_PLAY
 	_auto_button.modulate = Color(0.90, 0.28, 0.30) if _auto else Color(1, 1, 1)
-	_bpm_label.text = "%d" % roundi(_bpm)
-	_bar.visible = not _locked
+	_tempo_value.text = "%d" % roundi(_bpm)
+	var minutes := TIMER_STEPS[_timer_index]
+	_timer_value.text = "∞" if minutes == 0 else "%d min" % minutes
+	_settings.visible = _settings_open and not _locked
+	_toggle_button.modulate = Color(0.90, 0.28, 0.30) if _settings_open else Color(1, 1, 1)
+	_toggle_button.visible = not _locked
+	_auto_button.visible = not _locked
+	_countdown.visible = not _locked
 	_quit_button.visible = not _locked
 	_lock_button.visible = not _locked
 	_unlock.visible = _locked

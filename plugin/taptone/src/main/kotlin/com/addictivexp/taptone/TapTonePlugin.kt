@@ -55,6 +55,13 @@ class TapTonePlugin(godot: Godot) : GodotPlugin(godot) {
 	@UsedByGodot
 	fun is_auto_running(): Boolean = NoiseEngine.isAutoRunning()
 
+	/** Seconds before the auto mode stops itself. 0 disarms the timer. */
+	@UsedByGodot
+	fun set_timer(seconds: Float) = NoiseEngine.setTimer(seconds)
+
+	@UsedByGodot
+	fun remaining_seconds(): Float = NoiseEngine.remainingSeconds()
+
 	/** Starts the foreground service that keeps playback alive off-screen. */
 	@UsedByGodot
 	fun start_background(title: String, text: String) {

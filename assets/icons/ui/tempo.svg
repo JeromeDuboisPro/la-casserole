@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- A metronome: wide base, sloping sides, a rod and its weight. Drawn with
+       heavy strokes because it is read at 80 pixels on a phone. -->
+  <path d="M 26 80 L 40 16 L 56 16 L 70 80 Z" fill="none" stroke="#EDEAE4" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="20" y="78" width="56" height="10" rx="5" fill="#EDEAE4"/>
+  <path d="M 48 74 L 60 28" stroke="#EDEAE4" stroke-width="7" stroke-linecap="round"/>
+  <rect x="44" y="48" width="20" height="10" rx="4" fill="#EDEAE4" transform="rotate(-14 54 53)"/>
+</svg>

@@ -98,6 +98,15 @@ func set_auto(enabled: bool, bpm: float) -> void:
 	if _plugin != null:
 		_plugin.set_auto(enabled, bpm)
 
+## The countdown lives in the plugin: a timer kept in the scene tree would stop
+## counting the moment Android suspends the app.
+func set_timer(seconds: float) -> void:
+	if _plugin != null:
+		_plugin.set_timer(seconds)
+
+func remaining_seconds() -> float:
+	return _plugin.remaining_seconds() if _plugin != null else 0.0
+
 func start_background(title: String, text: String) -> void:
 	if _plugin != null:
 		_plugin.start_background(title, text)
