@@ -31,10 +31,18 @@ class NoiseService : Service() {
 	override fun onBind(intent: Intent?): IBinder? = null
 
 	override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+		// A refresh must never bring a stopped service back to life: it arrives
+		// with no title, and it would put back a notification the user just
+		// dismissed with Stop.
+		if (intent?.action == ACTION_REFRESH && !isRunning) {
+			stopSelf()
+			return START_NOT_STICKY
+		}
 		when (intent?.action) {
 			ACTION_TOGGLE -> NoiseEngine.setAuto(!NoiseEngine.isAutoRunning(), NoiseEngine.bpm())
 			ACTION_STOP -> {
 				NoiseEngine.setAuto(false, NoiseEngine.bpm())
+				isRunning = false
 				releaseWakeLock()
 				stopForeground(STOP_FOREGROUND_REMOVE)
 				stopSelf()
@@ -42,19 +50,20 @@ class NoiseService : Service() {
 			}
 			ACTION_REFRESH -> Unit   // keep title and text, only the icons change
 			else -> {
-				title = intent?.getStringExtra(EXTRA_TITLE)
-					?: applicationInfo.loadLabel(packageManager).toString()
+				title = intent?.getStringExtra(EXTRA_TITLE).orEmpty().ifBlank { appLabel() }
 				text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
 			}
 		}
 		startInForeground(NOTIFICATION_ID, buildNotification())
 		acquireWakeLock()
+		isRunning = true
 		// Restarting with no intent would leave us without a notification, so
 		// let the app ask again rather than coming back half-configured.
 		return START_NOT_STICKY
 	}
 
 	override fun onDestroy() {
+		isRunning = false
 		releaseWakeLock()
 		super.onDestroy()
 	}
@@ -79,9 +88,12 @@ class NoiseService : Service() {
 	private fun buildNotification(): Notification {
 		val manager = getSystemService(NotificationManager::class.java)
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			// The channel name is what the user sees in the system settings, and
+			// Android rejects an empty one outright, so it never depends on a
+			// value that arrives with an intent.
 			val channel = NotificationChannel(
 				CHANNEL_ID,
-				title,
+				appLabel(),
 				// LOW: visible and dismissable, but it must never make a sound of
 				// its own on top of the one we are playing.
 				NotificationManager.IMPORTANCE_LOW,
@@ -111,7 +123,7 @@ class NoiseService : Service() {
 		val stop = action(ACTION_STOP, android.R.drawable.ic_menu_close_clear_cancel, "Stop")
 
 		return Notification.Builder(this, CHANNEL_ID)
-			.setContentTitle(title)
+			.setContentTitle(title.ifBlank { appLabel() })
 			.setContentText(text)
 			.setSmallIcon(applicationInfo.icon)
 			.setOngoing(true)
@@ -120,6 +132,8 @@ class NoiseService : Service() {
 			.addAction(stop)
 			.build()
 	}
+
+	private fun appLabel(): String = applicationInfo.loadLabel(packageManager).toString()
 
 	private fun acquireWakeLock() {
 		if (wakeLock != null) return
@@ -136,6 +150,10 @@ class NoiseService : Service() {
 	}
 
 	companion object {
+		/** Whether a foreground instance is up, so a refresh cannot restart one. */
+		@Volatile
+		private var isRunning = false
+
 		private const val CHANNEL_ID = "taptone"
 		private const val NOTIFICATION_ID = 1
 		private const val WAKE_LOCK_TAG = "taptone:playback"
@@ -157,6 +175,7 @@ class NoiseService : Service() {
 
 		/** Re-posts the notification so its play/pause icon matches the engine. */
 		fun refresh(context: Context) {
+			if (!isRunning) return
 			val intent = Intent(context, NoiseService::class.java).setAction(ACTION_REFRESH)
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 				context.startForegroundService(intent)
@@ -168,6 +187,7 @@ class NoiseService : Service() {
 		const val ACTION_REFRESH = "com.addictivexp.taptone.REFRESH"
 
 		fun stop(context: Context) {
+			isRunning = false
 			context.stopService(Intent(context, NoiseService::class.java))
 		}
 	}

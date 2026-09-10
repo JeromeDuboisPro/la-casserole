@@ -97,7 +97,6 @@ func _setup_audio() -> void:
 		if not OS.request_permission("android.permission.POST_NOTIFICATIONS"):
 			push_warning("notification permission refused")
 		_android.load_samples(SKIN_CASSEROLE.samples)
-		_android.start_background(SKIN_CASSEROLE.display_name, "")
 		_noise = _android
 		# The engine mixer would otherwise keep an output stream open for
 		# nothing, and show up as a second player in the system audio dump.
@@ -162,6 +161,12 @@ func _toggle_auto() -> void:
 
 func _apply_auto(enabled: bool) -> void:
 	if _android.is_available():
+		# The service exists to outlive the screen, so it comes up with the auto
+		# mode rather than with the app: no notification until there is
+		# something to keep alive. Stop from the notification tears it down, and
+		# playing again brings it back.
+		if enabled:
+			_android.start_background(SKIN_CASSEROLE.display_name, "")
 		_android.set_auto(enabled, _bpm)
 		return
 	if enabled:
