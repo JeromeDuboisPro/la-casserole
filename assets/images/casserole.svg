@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 720" width="1024" height="720">
+  <!-- The on-screen pot. Same shapes as the launcher icon, drawn larger and
+       without the sound arcs: on screen the pot is the surface you strike,
+       not a logo. -->
+  <g fill="#EDEAE4">
+    <rect x="672" y="150" width="318" height="56" rx="28"/>
+    <rect x="96" y="140" width="620" height="72" rx="36"/>
+    <path d="M 132 228 L 680 228 L 645 574 Q 636 632 578 632 L 234 632 Q 176 632 167 574 Z"/>
+  </g>
+</svg>

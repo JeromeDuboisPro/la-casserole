@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://8flya6f4uv23"
-path="res://.godot/imported/casserole.png-84d5fcc44ec8555cb67aa6085b28286c.ctex"
+uid="uid://ciouprl8prvva"
+path="res://.godot/imported/casserole.svg-7e414d3c9e7b9d31514993338b90df2f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/images/casserole.png"
-dest_files=["res://.godot/imported/casserole.png-84d5fcc44ec8555cb67aa6085b28286c.ctex"]
+source_file="res://assets/images/casserole.svg"
+dest_files=["res://.godot/imported/casserole.svg-7e414d3c9e7b9d31514993338b90df2f.ctex"]
 
 [params]
 
@@ -38,3 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false
