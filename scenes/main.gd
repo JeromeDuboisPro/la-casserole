@@ -35,6 +35,11 @@ const MIN_MARGIN := 48.0
 const TOP_BUTTON_SIZE := 120.0
 const AUTO_SIZE := 250.0
 const SLIDER_HEIGHT := 180.0
+## Room kept below the pot: enough for the countdown when the settings are
+## folded, enough for the two rows when they are not. Reserving the larger
+## figure at all times left the pot visibly high on the screen.
+const POT_GAP_FOLDED := 90.0
+const POT_GAP_OPEN := 380.0
 
 @onready var _tap: TapCore = $TapCore
 @onready var _bank: AudioBank = $AudioBank
@@ -113,7 +118,25 @@ func _apply_safe_area() -> void:
 	_unlock.offset_top = -(bottom + SLIDER_HEIGHT)
 	_unlock.offset_bottom = -bottom
 	_pot.offset_top = top + TOP_BUTTON_SIZE + MIN_MARGIN
-	_pot.offset_bottom = -(bottom + AUTO_SIZE + 380.0)
+	_position_pot()
+
+## The pot takes every pixel the controls are not using, so it is at its
+## biggest in the state the app spends most of its time in.
+func _position_pot(animate: bool = false) -> void:
+	var window := DisplayServer.window_get_size()
+	if window.y <= 0:
+		return
+	var safe := DisplayServer.get_display_safe_area()
+	var scale := get_viewport_rect().size.y / float(window.y)
+	var bottom: float = maxf((window.y - safe.position.y - safe.size.y) * scale, MIN_MARGIN)
+	var gap := POT_GAP_OPEN if _settings_open else POT_GAP_FOLDED
+	var target := -(bottom + AUTO_SIZE + gap)
+	if not animate:
+		_pot.offset_bottom = target
+		return
+	# A short ease, so the pot reads as making room rather than jumping.
+	var tween := create_tween()
+	tween.tween_property(_pot, "offset_bottom", target, 0.15).set_trans(Tween.TRANS_CUBIC)
 
 func _setup_audio() -> void:
 	if _android.is_available():
@@ -263,6 +286,7 @@ func _refresh() -> void:
 	var minutes := TIMER_STEPS[_timer_index]
 	_timer_value.text = "∞" if minutes == 0 else "%d min" % minutes
 	_settings.visible = _settings_open and not _locked
+	_position_pot(true)
 	_toggle_button.modulate = Color(0.90, 0.28, 0.30) if _settings_open else Color(1, 1, 1)
 	_toggle_button.visible = not _locked
 	_auto_button.visible = not _locked
