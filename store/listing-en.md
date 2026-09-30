@@ -10,20 +10,14 @@ They can stop you bringing a pot. They can't stop your phone.
 ## Full description (4000 characters max)
 A cooking pot, in your pocket.
 
-Tap the screen and it rings like a struck lid. The sounds come from a real
-pot, recorded a metre away, not from a stock sound library.
+Tap the screen and it rings like a struck lid. The sounds come from a real pot, recorded a metre away, not from a stock sound library.
 
-Auto mode: tap the rhythm you want and the app keeps it going. A timer from
-5 to 60 minutes, or forever if you have the stamina.
+Auto mode: tap the rhythm you want and the app keeps it going. A timer from 5 to 60 minutes, or forever if you have the stamina.
 
-The sound carries on with the screen off and the phone deep in a pocket.
-That, in fact, is the whole reason this app exists.
+The sound carries on with the screen off and the phone deep in a pocket. That, in fact, is the whole reason this app exists.
 
-A lock keeps your pocket from pressing anything. The controls also sit on the
-lock screen, and on your headphone button.
+A lock keeps your pocket from pressing anything.
 
-No account. No ads. No score, no combo, no reward: this is not a game, it is a
-utensil.
+No account. No ads. No score, no combo, no reward: this is not a game, it is a utensil.
 
-No network permission, no data collection. The app knows nothing about you,
-and has no way of finding out.
+No network permission, no data collection. The app knows nothing about you, and has no way of finding out.
